@@ -14,6 +14,8 @@ import pprint
 from termcolor import colored
 import copy
 import itertools
+import random
+import string
 
 def sort_variables(v):
     v_set = set(v)
@@ -23,7 +25,7 @@ def sort_variables(v):
 def r_lte_s(v, p_0):
     p = copy.deepcopy(p_0)
     for a_r in v:
-        for a_s in v: 
+        for a_s in v:
             if v.index(a_s) < v.index(a_r):
                 rhs_list = p[a_r]
                 for rhs in rhs_list:
@@ -61,26 +63,120 @@ def left_recursion_elimination(v, p_0):
     return p
 
 def begin_with_terminal(p):
-    pass
+    n = {}
+    new = []
+    for i in p:
+        for j in p[i]:
+            e = []
+            if j[0].isupper():
+                for k in p[j[0]]:
+                    z = k
+                    nn = []
+
+                    for x in range(0,len(z)):
+                        nn.append(z[x])
+
+                    for a in range(1,len(j)):
+                        nn.append(j[a])
+
+                    new.append(nn)
+            else:
+                new.append(j)
+
+        e.append(new)
+        n[i] = e[0]
+        new = []
+        p[i] = n[i]
+
+
+    p = n
+    return p
+
 
 def terminal_followed_by_word_of_variables(p):
-    pass
+    terminal_list = {}
+    for i in list(p):
+        nj = []
+        for j in p[i]:
+            size = len(j)
+            if (count_left_terminals(j) >= 2):
+                new = []
+
+                for k in range (1,count_left_terminals(j)):
+                    new.append(j[k])
+
+                end = []
+                for k in range (count_left_terminals(j),size):
+                    end.append(j[k])
+
+                exist = exists(new,terminal_list)
+                if not exist:
+                    t = get_new_terminal(p)
+                    n = []
+                    n.append(new)
+                    p[t] = n
+                    terminal_list[t] = new
+
+                else:
+                    t = exist
+
+                nn = [j[0]] + [t] + end
+                nj.append(nn)
+            else:
+                nj.append(j)
+        p[i] = nj
+    print("-> ", p)
+    return p
+
+def exists(j,list):
+    for k,v in list.items():
+        if j == v:
+            return k
+
+    return False
+
+def count_left_terminals(j):
+    count = 0
+    for i in j:
+        if i.islower():
+            count += 1
+        else:
+            break
+    return count
+
+
+def get_new_terminal(p):
+    list = []
+    for i in p:
+        list.append(i)
+
+    run = True
+    while (run):
+        letters = string.ascii_uppercase
+        s = random.choice(letters)
+        count = 0
+        for i in list:
+            if s != i:
+                count += 1
+        if count == len(list):
+            run = False
+    return s
 
 def print_prod(p):
     for key in p.keys():
         print(colored(key, 'magenta') + colored(" → ", 'white', attrs=['bold']) + colored(" ".join(p[key][0]), 'cyan'))
         for rhs in p[key][1:]:
             print(colored(" | ", 'white', attrs=['bold']) + colored(" ".join(rhs), 'cyan'))
-    
+
 def mk_example(ex_num, v_0, p_0):
     pp = pprint.PrettyPrinter(indent=4)
     print(colored("Example " + str(ex_num), attrs=['bold']))
     print("Original production set.")
     print_prod(p_0)
-    
+
     for i, v in enumerate(list(itertools.permutations(v_0))):
         print(colored("Example "+ str(ex_num) + "." + str(i), 'green', attrs=['bold']))
-        
+
         # First step: grammar simplification
         print(colored("Second step: sort variables", 'blue'))
         v = list(v)
@@ -89,20 +185,20 @@ def mk_example(ex_num, v_0, p_0):
         # Third and fourth steps: production set transformation to
         # A_r → A_s α, where r ≤ s and removal of productions of the form
         # Ar → Arα.
-        
+
         print(colored("Production set transformation to A_r → A_s α, where r ≤ s.", 'blue'))
         p_i = r_lte_s(v, p_0)
         print_prod(p_i)
-        print(colored("Production set elimination of A_r → A_r α.", 'blue'))    
+        print(colored("Production set elimination of A_r → A_r α.", 'blue'))
         p_i = left_recursion_elimination(v, p_i)
         print_prod(p_i)
         print(colored("Each production begining with a terminal.", 'grey'))
         p_i = begin_with_terminal(p_i)
-        pp.pprint("TO DO!")    
+        print_prod  (p_i)
         print(colored("Each production begining with a terminal followed by a word of variables.", 'grey'))
         p_i = terminal_followed_by_word_of_variables(p_i)
-        pp.pprint("TO DO!")
-    
+        print_prod(p_i)
+
 if __name__ == "__main__":
     print(colored("Examples of transformations from CFG to Greibach normal form", attrs=['bold']))
 
@@ -119,4 +215,4 @@ if __name__ == "__main__":
     p1 = { "A" : [["B", "C"]], "B" : [["C", "A"], ["b"]], "C" : [["A", "B"], ["a"]] }
     s1  = "A"
     mk_example(2, v1, p1)
-    
+
